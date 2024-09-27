@@ -11,13 +11,13 @@ const port = process.env.PORT || 5000;
 
 //middleware
 app.use(express.json())
+app.use(cookieParser())
 app.use(cors({
   origin: [
     "http://localhost:5173",
   ],
   credentials: true,
 }))
-app.use(cookieParser())
 
 //connection mongodb database
 const uri = `mongodb+srv://${process.env.DB_UserName}:${process.env.DB_Password}@cluster0.0zrlznh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -31,6 +31,34 @@ const client = new MongoClient(uri, {
   }
 });
 
+// custon middleware
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token
+  if (!token) {
+    return res.status(401).send({ "error": "Unauthorized", "message": "Authentication is required" });
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ "error": "Unauthorized", "message": "Authentication is required" });
+    }
+    console.log(decoded)
+    req.user = decoded
+    next()
+  })
+}
+
+// verify admid middleware
+
+// const verifyAdmin = async (req, res, next) => {
+//   const email = req.decoded?.user?.email;
+//   const query = { email: email };
+//   const result = await usersCollection.findOne(query);
+//   if (result?.role === "admin") {
+//     next();
+//   } else {
+//     return res.status(403).send({ "error": "Forbidden", "message": "You do not have permission to access this resource." });
+//   }
+// };
 
 async function run() {
   try {
@@ -52,7 +80,7 @@ async function run() {
       const dog = await dogsCollection.findOne({ _id: new ObjectId(req.params.id) })
       res.send(dog)
     })
-    app.get("/cats", async (req, res) => {
+    app.get("/cats", verifyToken, async (req, res) => {
       const cats = await catsCollection.find().toArray();
       res.send(cats)
     })
@@ -60,21 +88,21 @@ async function run() {
     // jwt request
 
     //genate a secret key require('crypto').randomBytes(64).toString('hex')
-    
+
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
     };
     //creating Token
-    app.post("/jwt",  async (req, res) => {
+    app.post("/jwt", async (req, res) => {
       const user = req.body.email;
       // console.log("user for token", user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
 
-      res.cookie("token", token, cookieOptions).send({ success: true});
+      res.cookie("token", token, cookieOptions).send({ success: true });
     });
- 
+
 
     //clearing Token
     app.post("/logout", async (req, res) => {
