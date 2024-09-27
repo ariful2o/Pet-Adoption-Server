@@ -32,12 +32,16 @@ async function run() {
     // Get the database and collection on which to run the operation
     const database = client.db("pet-adoption");
     const dogsCollection = database.collection("dog");
+    const catsCollection = database.collection("cats");
 
     // Perform CRUD operations here
     app.get("/dogs",async (req,res)=>{
       const dogs = await dogsCollection.find().toArray();
       res.send(dogs)
-
+    })
+    app.get("/cats",async (req,res)=>{
+      const cats = await catsCollection.find().toArray();
+      res.send(cats)
     })
 
 
