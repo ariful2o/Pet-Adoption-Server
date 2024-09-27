@@ -10,8 +10,7 @@ app.use(express.json())
 app.use(cors())
 
 //connection mongodb database
-
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_UserName}:${process.env.DB_Password}@cluster0.0zrlznh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -38,6 +37,10 @@ async function run() {
     app.get("/dogs",async (req,res)=>{
       const dogs = await dogsCollection.find().toArray();
       res.send(dogs)
+    })
+    app.get("/dog/:id", async (req,res)=>{
+      const dog = await dogsCollection.findOne({_id: new ObjectId(req.params.id)})
+      res.send(dog)
     })
     app.get("/cats",async (req,res)=>{
       const cats = await catsCollection.find().toArray();
