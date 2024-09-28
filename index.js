@@ -80,12 +80,19 @@ async function run() {
       const dogs = await dogsCollection.find().toArray();
       res.send(dogs);
     });
+    app.get("/:doglist/:id", async (req, res) => {
+      const pet = req.params.doglist
+      if (pet === "catlist") {
+        const cat = await catsCollection.findOne({ _id: new ObjectId(req.params.id) });
+        res.send(cat);
+      } else {
+        const dog = await dogsCollection.findOne({ _id: new ObjectId(req.params.id) });
+        res.send(dog);
+      }
 
-    app.get("/dog/:id", async (req, res) => {
-      const dog = await dogsCollection.findOne({ _id: new ObjectId(req.params.id) });
-      res.send(dog);
     });
 
+    http://localhost:5000/${params.path}/${params.id}
     app.get("/cats", async (req, res) => {
       const cats = await catsCollection.find().toArray();
       res.send(cats);
