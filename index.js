@@ -142,7 +142,6 @@ async function run() {
       }
     });
 
-
     // check is admin
     app.get("/admin/check/:email", async (req, res) => {
       const query = { email: req.params.email };
