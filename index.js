@@ -42,6 +42,7 @@ async function run() {
     const dogsCollection = database.collection("dog");
     const catsCollection = database.collection("cats");
     const userCollection = database.collection("users");
+    const adoptRequestCillection = database.collection("adopt-request");
 
     // Create a unique index for the email field
     await userCollection.createIndex({ email: 1 }, { unique: true });
@@ -74,35 +75,13 @@ async function run() {
       }
     };
 
-
-    // Perform CRUD operations
-    app.get("/dogs", async (req, res) => {
-      const dogs = await dogsCollection.find().toArray();
-      res.send(dogs);
-    });
-    app.get("/:doglist/:id", async (req, res) => {
-      const pet = req.params.doglist
-      if (pet === "catlist") {
-        const cat = await catsCollection.findOne({ _id: new ObjectId(req.params.id) });
-        res.send(cat);
-      } else {
-        const dog = await dogsCollection.findOne({ _id: new ObjectId(req.params.id) });
-        res.send(dog);
-      }
-
-    });
-
-    http://localhost:5000/${params.path}/${params.id}
-    app.get("/cats", async (req, res) => {
-      const cats = await catsCollection.find().toArray();
-      res.send(cats);
-    });
-
+    // cookies options
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
     };
+
 
     // Creating Token
     app.post("/jwt", async (req, res) => {
@@ -158,6 +137,44 @@ async function run() {
     });
 
 
+    // Perform CRUD operations
+    app.get("/dogs", async (req, res) => {
+      const dogs = await dogsCollection.find().toArray();
+      res.send(dogs);
+    });
+    app.get("/:doglist/:id", async (req, res) => {
+      const pet = req.params.doglist
+      if (pet === "catlist") {
+        const cat = await catsCollection.findOne({ _id: new ObjectId(req.params.id) });
+        res.send(cat);
+      } else {
+        const dog = await dogsCollection.findOne({ _id: new ObjectId(req.params.id) });
+        res.send(dog);
+      }
+
+    });
+    app.get("/cats", async (req, res) => {
+      const cats = await catsCollection.find().toArray();
+      res.send(cats);
+    });
+
+    app.post("/addpet",async (req,res)=>{
+      const pet = req.body;
+      if (pet.petCategory.value === "dog") {
+        const result = await dogsCollection.insertOne(pet);
+        res.send(result);
+      }else if(pet.petCategory.value === "cat") {
+        const result = await catsCollection.insertOne(pet);
+        res.send(result);
+      }
+    })
+    //request for adoptions
+    app.post("/pets/adoption", async (req, res) => {
+      const data = req.body;
+      // const pet= data.petId
+      const result = await adoptRequestCillection.insertOne(data)
+      res.send(result)
+    })
 
 
     await client.db("admin").command({ ping: 1 });
