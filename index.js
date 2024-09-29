@@ -142,7 +142,19 @@ async function run() {
       const dogs = await dogsCollection.find().toArray();
       res.send(dogs);
     });
+
+
+    const isValidObjectId = (id) => {
+      return ObjectId.isValid(id) && (String(new ObjectId(id)) === id);
+  };
+  
     app.get("/:doglist/:id", async (req, res) => {
+      const id = req.params.id;
+
+      // Validate ObjectId
+      if (!isValidObjectId(id)) {
+          return res.status(400).send({ error: "Invalid ID format." });
+      }
       const pet = req.params.doglist
       if (pet === "catlist") {
         const cat = await catsCollection.findOne({ _id: new ObjectId(req.params.id) });
@@ -158,12 +170,12 @@ async function run() {
       res.send(cats);
     });
 
-    app.post("/addpet",async (req,res)=>{
+    app.post("/addpet", async (req, res) => {
       const pet = req.body;
       if (pet.petCategory.value === "dog") {
         const result = await dogsCollection.insertOne(pet);
         res.send(result);
-      }else if(pet.petCategory.value === "cat") {
+      } else if (pet.petCategory.value === "cat") {
         const result = await catsCollection.insertOne(pet);
         res.send(result);
       }
@@ -174,6 +186,22 @@ async function run() {
       // const pet= data.petId
       const result = await adoptRequestCillection.insertOne(data)
       res.send(result)
+    })
+
+    // const author = {
+    //   "displayName":"Mohammad Ariful Islam",
+    //   "email":"a@b.com",
+    //   "photoURL":"https://i.ibb.co/YXywfQL/ariful.jpg"
+    // }
+    app.post("/mypets", async (req, res) => {
+      const email = req.body.email
+      const query ={ 'author.email': email }
+
+      console.log(email,"hit api ");
+      const result = await dogsCollection.find(query).toArray()
+      const result2 = await catsCollection.find(query).toArray()
+      const allPets = [...result, ...result2]
+      res.send(allPets)
     })
 
 
