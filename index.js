@@ -196,8 +196,6 @@ async function run() {
     app.post("/mypets", async (req, res) => {
       const email = req.body.email
       const query ={ 'author.email': email }
-
-      console.log(email,"hit api ");
       const result = await dogsCollection.find(query).toArray()
       const result2 = await catsCollection.find(query).toArray()
       const allPets = [...result, ...result2]
