@@ -146,14 +146,14 @@ async function run() {
 
     const isValidObjectId = (id) => {
       return ObjectId.isValid(id) && (String(new ObjectId(id)) === id);
-  };
-  
+    };
+
     app.get("/:doglist/:id", async (req, res) => {
       const id = req.params.id;
 
       // Validate ObjectId
       if (!isValidObjectId(id)) {
-          return res.status(400).send({ error: "Invalid ID format." });
+        return res.status(400).send({ error: "Invalid ID format." });
       }
       const pet = req.params.doglist
       if (pet === "catlist") {
@@ -188,18 +188,29 @@ async function run() {
       res.send(result)
     })
 
-    // const author = {
-    //   "displayName":"Mohammad Ariful Islam",
-    //   "email":"a@b.com",
-    //   "photoURL":"https://i.ibb.co/YXywfQL/ariful.jpg"
-    // }
     app.post("/mypets", async (req, res) => {
       const email = req.body.email
-      const query ={ 'author.email': email }
+      const query = { 'author.email': email }
       const result = await dogsCollection.find(query).toArray()
       const result2 = await catsCollection.find(query).toArray()
       const allPets = [...result, ...result2]
       res.send(allPets)
+    })
+
+    app.delete("/:petCategory/:id", async (req, res) => {
+      const id = req.params.id;
+      if (!isValidObjectId(id)) {
+        return res.status(400).send({ error: "Invalid ID format." });
+      }
+      const pet = req.params.petCategory
+      console.log(pet, id)  
+      if (pet === "cat") {
+        const result = await catsCollection.deleteOne({ _id: new ObjectId(id) });
+        res.send(result);
+      } else {
+        const result = await dogsCollection.deleteOne({ _id: new ObjectId(id) });
+        res.send(result);
+      }
     })
 
 
