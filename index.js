@@ -196,6 +196,35 @@ async function run() {
       const allPets = [...result, ...result2]
       res.send(allPets)
     })
+    app.put("/updatepet/:petCategory/:id", async (req, res) => {
+      const update = req.body
+      const id = req.params.id
+      const pet = req.params.petCategory
+      const query = { _id: new ObjectId(id) }
+      const updateDoc = {
+        $set: {
+          name: update.name,
+          age: update.age,
+          petCategory: update.petCategory,
+          gender: update.gender,
+          petLocation: update.petLocation,
+          description: update.description,
+          longDescription: update.longDescription,
+          breed: update.breed,
+          adoptionFee: update.adoptionFee,
+          weight: update.weight,
+          image: update.image,
+          status: update.status,
+        },
+      }
+
+      if (pet === ":cat") {
+        const result = await catsCollection.updateOne(query, updateDoc)
+        res.send(result);
+      }
+      const result = await dogsCollection.updateOne(query, updateDoc)
+      res.send(result);
+    })
 
     app.delete("/:petCategory/:id", async (req, res) => {
       const id = req.params.id;
@@ -203,7 +232,7 @@ async function run() {
         return res.status(400).send({ error: "Invalid ID format." });
       }
       const pet = req.params.petCategory
-      console.log(pet, id)  
+      console.log(pet, id)
       if (pet === "cat") {
         const result = await catsCollection.deleteOne({ _id: new ObjectId(id) });
         res.send(result);
@@ -230,3 +259,4 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+
