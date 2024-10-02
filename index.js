@@ -193,14 +193,17 @@ async function run() {
       const query = { 'author.email': email }
       const result = await dogsCollection.find(query).toArray()
       const result2 = await catsCollection.find(query).toArray()
-      const mypets = [...result, ...result2]//my add all pet 
       const allrequesr = await adoptRequestCillection.find().toArray()//all requests
+      const mypets = [...result, ...result2]//my add all pet 
 
       let mypetsAdoptReq = [];
       for (let i = 0; i < allrequesr.length; i++) {
         const requestID = allrequesr[i].petId;
         const requestPet = mypets.find(pet => pet._id == requestID)
         const requestUser =allrequesr[i]
+        if(!requestPet){
+          return
+        }
         mypetsAdoptReq.push({requestPet,requestUser})
       }
       res.send(mypetsAdoptReq)
