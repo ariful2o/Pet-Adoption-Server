@@ -200,11 +200,11 @@ async function run() {
       for (let i = 0; i < allrequesr.length; i++) {
         const requestID = allrequesr[i].petId;
         const requestPet = mypets.find(pet => pet._id == requestID)
-        const requestUser =allrequesr[i]
-        if(!requestPet){
+        const requestUser = allrequesr[i]
+        if (!requestPet) {
           return
         }
-        mypetsAdoptReq.push({requestPet,requestUser})
+        mypetsAdoptReq.push({ requestPet, requestUser })
       }
       res.send(mypetsAdoptReq)
     })
@@ -263,6 +263,51 @@ async function run() {
       }
     })
 
+    app.put("/updateStatus/:petCategory/:petId", async (req, res) => {
+      const update = req.body
+      const id = req.params.petId
+      const petCategory = req.params.petCategory
+      const query = { _id: new ObjectId(id) }
+
+      const updateDoc = {
+        $set: {
+          status: update.status,
+        },
+      }
+
+      if (petCategory === "cat") {
+        const result = await catsCollection.updateOne(query, updateDoc)
+        res.send(result);
+      } else {
+        const result = await dogsCollection.updateOne(query, updateDoc)
+        res.send(result);
+      }
+    })
+    app.put('/adoptrequests/:id', async (req, res) => {
+      const update = req.body
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+
+      const updateDoc = {
+        $set: {
+          status: update.status,
+        },
+      }
+      const result = await adoptRequestCillection.updateOne(query, updateDoc)
+      res.send(result);
+    })
+    app.post("/myrequest", async (req, res) => {
+      const email = req.body.email;
+      const query = { email: email }
+      const result = await adoptRequestCillection.find(query).toArray()
+      res.send(result)
+    })
+
+    app.delete("/cancel/:id", async (req, res) => {
+      const id =req.params.id
+      const result = await adoptRequestCillection.deleteOne({ _id: new ObjectId(id) })
+      res.send(result)
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
