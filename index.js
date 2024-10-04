@@ -43,6 +43,7 @@ async function run() {
     const catsCollection = database.collection("cats");
     const userCollection = database.collection("users");
     const adoptRequestCillection = database.collection("adopt-request");
+    const campaignCollection = database.collection("campaign");
 
     // Create a unique index for the email field
     await userCollection.createIndex({ email: 1 }, { unique: true });
@@ -304,10 +305,31 @@ async function run() {
     })
 
     app.delete("/cancel/:id", async (req, res) => {
-      const id =req.params.id
+      const id = req.params.id
       const result = await adoptRequestCillection.deleteOne({ _id: new ObjectId(id) })
       res.send(result)
     })
+
+    // campains request
+    app.post("/createcampain", async (req, res) => {
+      const campaign = req.body;
+      const result = await campaignCollection.insertOne(campaign);
+      res.send(result);
+    });
+
+    app.get("/campaigns/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await campaignCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // app.get("/campaigns/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const campaign = await campaignsCollection.findOne({ _id: new ObjectId(id) });
+    //   res.send(campaign);
+    // });
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
