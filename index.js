@@ -4,6 +4,7 @@ require("dotenv").config();
 const cors = require("cors");
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const app = express();
 
 const port = process.env.PORT || 5000;
@@ -44,6 +45,7 @@ async function run() {
     const userCollection = database.collection("users");
     const adoptRequestCillection = database.collection("adopt-request");
     const campaignCollection = database.collection("campaign");
+    const donationCollection = database.collection("donation");
 
     // Create a unique index for the email field
     await userCollection.createIndex({ email: 1 }, { unique: true });
@@ -254,7 +256,7 @@ async function run() {
         return res.status(400).send({ error: "Invalid ID format." });
       }
       const pet = req.params.petCategory
-      console.log(pet, id)
+      // console.log(pet, id)
       if (pet === "cat") {
         const result = await catsCollection.deleteOne({ _id: new ObjectId(id) });
         res.send(result);
@@ -317,18 +319,76 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/campaigns/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const result = await campaignCollection.find(query).toArray();
+
+
+    app.post("/campaigns", async (req, res) => {
+      try {
+        const email = req.body.email;
+        const query = { email: email };
+        const result = await campaignCollection.find(query).toArray();
+        if (result.length === 0) {
+          return res.status(404).json({ message: "No campaigns found for this email." });
+        }
+
+        res.status(200).json(result);
+      } catch (error) {
+        console.error("Error fetching campaigns:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
+
+
+    // Example Express.js route for fetching campaigns
+    app.get('/api/campaigns', async (req, res) => {
+      const page = parseInt(req.query.page) || 0;
+      const limit = 10; // Number of campaigns per page
+      const campaigns = await campaignCollection
+        .find()
+        .skip(page * limit)
+        .limit(limit)
+        .toArray();
+
+      const totalCount = await campaignCollection.countDocuments();
+      const nextPage = (page + 1) * limit < totalCount ? page + 1 : null;
+
+      res.json({ campaigns, nextPage });
+    });
+
+
+    app.post(`/donation-campaigns`, async (req, res) => {
+      const id = req.body.id;
+      const result = await campaignCollection.findOne({ _id: new ObjectId(id) })
       res.send(result);
     });
 
-    // app.get("/campaigns/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const campaign = await campaignsCollection.findOne({ _id: new ObjectId(id) });
-    //   res.send(campaign);
-    // });
+
+    // payment methods
+
+    // Payment method intent
+    app.post("/create-payment-intent", async (req, res) => {
+      const donation = req.body.amount;
+      console.log(donation);
+      const amount = parseInt(donation * 100);
+      const minimumAmount = 1; // Minimum amount in cents (corresponds to $0.50 USD)
+      if (amount < minimumAmount) {
+        return res
+          .status(400)
+          .send({ message: "Amount is below minimum charge amount." });
+      }
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"], // Correct parameter name
+      });
+      res.send({ clientSecret: paymentIntent.client_secret });
+    });
+
+    app.post("/paymentsucess", async (req, res) => {
+      const donation = req.body
+      const result = await donationCollection.insertOne(donation)
+      res.send(result);
+    })
+
 
 
     await client.db("admin").command({ ping: 1 });
