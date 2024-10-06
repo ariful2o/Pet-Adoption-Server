@@ -391,6 +391,43 @@ async function run() {
 
 
 
+    app.get("/myDonations", async (req, res) => {
+      const email = req.query.email
+      const query = { email: email }
+      const result = await donationCollection.find(query).toArray()
+      res.send(result)
+    })
+
+    // //my campaign donators
+    // app.post("/mycampaigns-donators",async (req,res)=>{
+    //   const id = req.query.id
+    //   const query = { campaignId: id }
+    //   const result = await donationCollection.find(query, { donators: 1, _id: 0 }).toArray()
+    //   console.log("id",result)
+    //   res.send(result)
+    // })
+
+    // My campaign donators
+    app.get("/mycampaigns-donators", async (req, res) => {
+      const id = req.query.id;
+      const query = { campaignId: id };
+
+      try {
+        // Apply projection to only return the donators field
+        const result = await donationCollection.find(query, { projection: { donators: 1, _id: 0 } }).toArray();
+
+        console.log("Result from MongoDB:", result);
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching donators:", error);
+        res.status(500).send({ error: "Internal Server Error" });
+      }
+    });
+
+
+
+
+
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
