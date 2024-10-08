@@ -321,9 +321,9 @@ async function run() {
 
 
 
-    app.post("/campaigns", async (req, res) => {
+    app.get("/campaigns", async (req, res) => {
       try {
-        const email = req.body.email;
+        const email = req.query.email;
         const query = { email: email };
         const result = await campaignCollection.find(query).toArray();
         if (result.length === 0) {
@@ -336,6 +336,10 @@ async function run() {
         res.status(500).json({ message: "Internal server error" });
       }
     });
+    app.get("/allcampaigns", async(req,res)=>{
+      const result = await campaignCollection.find().toArray();
+      res.send(result)
+    })
 
 
     // Example Express.js route for fetching campaigns
@@ -367,7 +371,7 @@ async function run() {
     // Payment method intent
     app.post("/create-payment-intent", async (req, res) => {
       const donation = req.body.amount;
-      console.log(donation);
+      // console.log(donation);
       const amount = parseInt(donation * 100);
       const minimumAmount = 1; // Minimum amount in cents (corresponds to $0.50 USD)
       if (amount < minimumAmount) {
@@ -384,11 +388,21 @@ async function run() {
     });
 
     app.post("/paymentsucess", async (req, res) => {
-      const donation = req.body
-      const result = await donationCollection.insertOne(donation)
+      const {email,campaignId,petPicture,donnerName,petName,currentDonation,maxDonation,isPaused,transactionId,donators,time,status
+      } = req.body;
+      
+      const result = await donationCollection.findOneAndUpdate(
+        { campaignId: campaignId }, // Filter by campaignId
+        {
+          $setOnInsert: {email,campaignId,petPicture,donnerName,petName,maxDonation,currentDonation,isPaused,transactionId,time,status,},
+          $push: { donators: { displayName:donnerName, amount:currentDonation } }, // Add to the donators array
+          // $inc: { currentDonation: parseInt(currentDonation) }, // Increment currentDonation
+        },
+        { upsert: true } // Insert if the document doesn't exist
+      );
+      // const result = await donationCollection.insertOne(donation)
       res.send(result);
     })
-
 
 
     app.get("/myDonations", async (req, res) => {
