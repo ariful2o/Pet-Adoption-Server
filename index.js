@@ -413,13 +413,10 @@ async function run() {
     })
 
     // //my campaign donators
-    // app.post("/mycampaigns-donators",async (req,res)=>{
-    //   const id = req.query.id
-    //   const query = { campaignId: id }
-    //   const result = await donationCollection.find(query, { donators: 1, _id: 0 }).toArray()
-    //   console.log("id",result)
-    //   res.send(result)
-    // })
+    app.get("/alldonations",verifyToken,verifyAdmin, async (req,res)=>{
+      const result = await campaignCollection.find().toArray()
+      res.send(result)
+    })
 
     // My campaign donators
     app.get("/mycampaigns-donators", async (req, res) => {
