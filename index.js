@@ -212,14 +212,59 @@ async function run() {
       res.send(mypetsAdoptReq)
     })
 
+    // set pagenation
     app.post("/mypets", async (req, res) => {
       const email = req.body.email
       const query = { 'author.email': email }
-      const result = await dogsCollection.find(query).toArray()
-      const result2 = await catsCollection.find(query).toArray()
-      const allPets = [...result, ...result2]
-      res.send(allPets)
+    //   const result = await dogsCollection.find(query).toArray()
+    //   const result2 = await catsCollection.find(query).toArray()
+    //   const allPets = [...result, ...result2]
+    //   res.send(allPets)
+
+    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+      const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page if not provided
+      const skip = (page - 1) * limit; // Calculate the number of documents to skip
+  
+      try {
+          // Count total number of documents in each collection
+          const totalDogs = await dogsCollection.countDocuments();
+          const totalCats = await catsCollection.countDocuments();
+          const totalPets = totalDogs + totalCats;
+
+          // Pagination logic across both collections
+          let pets = [];
+          if (skip < totalDogs) {
+              // If skip is less than the number of dogs, fetch dogs first
+              const dogs = await dogsCollection.find(query).skip(skip).limit(limit).toArray();
+              pets = [...dogs];
+              // console.log(dogs.length);
+              // If more pets are needed to fill the limit, fetch cats
+              if (dogs.length < limit) {
+                  const remainingLimit = limit - dogs.length;
+                  const cats = await catsCollection.find(query).limit(remainingLimit).toArray();
+                  pets = [...pets, ...cats];
+              }
+          } else {
+              // If skip is greater than or equal to the number of dogs, skip cats
+              const catsSkip = skip - totalDogs;
+              const cats = await catsCollection.find(query).skip(catsSkip).limit(limit).toArray();
+              pets = [...cats];
+          }
+  
+          res.json({
+              pets,
+              totalPets,
+              totalPages: Math.ceil(totalPets / limit),
+              currentPage: page,
+          });
+      } catch (error) {
+          res.status(500).json({ message: error.message });
+      }
+
+
     })
+
+
     app.put("/updatepet/:petCategory/:id", async (req, res) => {
       const update = req.body
       const id = req.params.id
@@ -336,7 +381,7 @@ async function run() {
         res.status(500).json({ message: "Internal server error" });
       }
     });
-    app.get("/allcampaigns", async(req,res)=>{
+    app.get("/allcampaigns", async (req, res) => {
       const result = await campaignCollection.find().toArray();
       res.send(result)
     })
@@ -388,14 +433,14 @@ async function run() {
     });
 
     app.post("/paymentsucess", async (req, res) => {
-      const {email,campaignId,petPicture,donnerName,petName,currentDonation,maxDonation,isPaused,transactionId,donators,time,status
+      const { email, campaignId, petPicture, donnerName, petName, currentDonation, maxDonation, isPaused, transactionId, donators, time, status
       } = req.body;
-      
+
       const result = await donationCollection.findOneAndUpdate(
         { campaignId: campaignId }, // Filter by campaignId
         {
-          $setOnInsert: {email,campaignId,petPicture,donnerName,petName,maxDonation,currentDonation,isPaused,transactionId,time,status,},
-          $push: { donators: { displayName:donnerName, amount:currentDonation } }, // Add to the donators array
+          $setOnInsert: { email, campaignId, petPicture, donnerName, petName, maxDonation, currentDonation, isPaused, transactionId, time, status, },
+          $push: { donators: { displayName: donnerName, amount: currentDonation } }, // Add to the donators array
           // $inc: { currentDonation: parseInt(currentDonation) }, // Increment currentDonation
         },
         { upsert: true } // Insert if the document doesn't exist
@@ -413,7 +458,7 @@ async function run() {
     })
 
     // //my campaign donators
-    app.get("/alldonations",verifyToken,verifyAdmin, async (req,res)=>{
+    app.get("/alldonations", verifyToken, verifyAdmin, async (req, res) => {
       const result = await campaignCollection.find().toArray()
       res.send(result)
     })
@@ -427,7 +472,7 @@ async function run() {
         // Apply projection to only return the donators field
         const result = await donationCollection.find(query, { projection: { donators: 1, _id: 0 } }).toArray();
 
-        console.log("Result from MongoDB:", result);
+        // console.log("Result from MongoDB:", result);
         res.send(result);
       } catch (error) {
         console.error("Error fetching donators:", error);
@@ -435,7 +480,50 @@ async function run() {
       }
     });
 
+    //  pagenation for all pets
+    app.get("/allpets", verifyToken, verifyAdmin, async (req, res) => {
+      const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+      const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page if not provided
+      const skip = (page - 1) * limit; // Calculate the number of documents to skip
+  
+      try {
+          // Count total number of documents in each collection
+          const totalDogs = await dogsCollection.countDocuments();
+          const totalCats = await catsCollection.countDocuments();
+          const totalPets = totalDogs + totalCats;
 
+          // Pagination logic across both collections
+          let pets = [];
+          if (skip < totalDogs) {
+              // If skip is less than the number of dogs, fetch dogs first
+              const dogs = await dogsCollection.find().skip(skip).limit(limit).toArray();
+              pets = [...dogs];
+              // console.log(dogs.length);
+              // If more pets are needed to fill the limit, fetch cats
+              if (dogs.length < limit) {
+                  const remainingLimit = limit - dogs.length;
+                  const cats = await catsCollection.find().limit(remainingLimit).toArray();
+                  pets = [...pets, ...cats];
+              }
+          } else {
+              // If skip is greater than or equal to the number of dogs, skip cats
+              const catsSkip = skip - totalDogs;
+              const cats = await catsCollection.find().skip(catsSkip).limit(limit).toArray();
+              pets = [...cats];
+          }
+  
+          res.json({
+              pets,
+              totalPets,
+              totalPages: Math.ceil(totalPets / limit),
+              currentPage: page,
+          });
+      } catch (error) {
+          res.status(500).json({ message: error.message });
+      }
+  });
+  
+  
 
 
 
