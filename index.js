@@ -46,6 +46,7 @@ async function run() {
     const adoptRequestCillection = database.collection("adopt-request");
     const campaignCollection = database.collection("campaign");
     const donationCollection = database.collection("donation");
+    const blogCollection = database.collection("blog");
 
     // Create a unique index for the email field
     await userCollection.createIndex({ email: 1 }, { unique: true });
@@ -216,49 +217,45 @@ async function run() {
     app.post("/mypets", async (req, res) => {
       const email = req.body.email
       const query = { 'author.email': email }
-    //   const result = await dogsCollection.find(query).toArray()
-    //   const result2 = await catsCollection.find(query).toArray()
-    //   const allPets = [...result, ...result2]
-    //   res.send(allPets)
 
-    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+      const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
       const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page if not provided
       const skip = (page - 1) * limit; // Calculate the number of documents to skip
-  
-      try {
-          // Count total number of documents in each collection
-          const totalDogs = await dogsCollection.countDocuments();
-          const totalCats = await catsCollection.countDocuments();
-          const totalPets = totalDogs + totalCats;
 
-          // Pagination logic across both collections
-          let pets = [];
-          if (skip < totalDogs) {
-              // If skip is less than the number of dogs, fetch dogs first
-              const dogs = await dogsCollection.find(query).skip(skip).limit(limit).toArray();
-              pets = [...dogs];
-              // console.log(dogs.length);
-              // If more pets are needed to fill the limit, fetch cats
-              if (dogs.length < limit) {
-                  const remainingLimit = limit - dogs.length;
-                  const cats = await catsCollection.find(query).limit(remainingLimit).toArray();
-                  pets = [...pets, ...cats];
-              }
-          } else {
-              // If skip is greater than or equal to the number of dogs, skip cats
-              const catsSkip = skip - totalDogs;
-              const cats = await catsCollection.find(query).skip(catsSkip).limit(limit).toArray();
-              pets = [...cats];
+      try {
+        // Count total number of documents in each collection
+        const totalDogs = await dogsCollection.countDocuments();
+        const totalCats = await catsCollection.countDocuments();
+        const totalPets = totalDogs + totalCats;
+
+        // Pagination logic across both collections
+        let pets = [];
+        if (skip < totalDogs) {
+          // If skip is less than the number of dogs, fetch dogs first
+          const dogs = await dogsCollection.find(query).skip(skip).limit(limit).toArray();
+          pets = [...dogs];
+          // console.log(dogs.length);
+          // If more pets are needed to fill the limit, fetch cats
+          if (dogs.length < limit) {
+            const remainingLimit = limit - dogs.length;
+            const cats = await catsCollection.find(query).limit(remainingLimit).toArray();
+            pets = [...pets, ...cats];
           }
-  
-          res.json({
-              pets,
-              totalPets,
-              totalPages: Math.ceil(totalPets / limit),
-              currentPage: page,
-          });
+        } else {
+          // If skip is greater than or equal to the number of dogs, skip cats
+          const catsSkip = skip - totalDogs;
+          const cats = await catsCollection.find(query).skip(catsSkip).limit(limit).toArray();
+          pets = [...cats];
+        }
+
+        res.json({
+          pets,
+          totalPets,
+          totalPages: Math.ceil(totalPets / limit),
+          currentPage: page,
+        });
       } catch (error) {
-          res.status(500).json({ message: error.message });
+        res.status(500).json({ message: error.message });
       }
 
 
@@ -485,46 +482,69 @@ async function run() {
       const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
       const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page if not provided
       const skip = (page - 1) * limit; // Calculate the number of documents to skip
-  
+
       try {
-          // Count total number of documents in each collection
-          const totalDogs = await dogsCollection.countDocuments();
-          const totalCats = await catsCollection.countDocuments();
-          const totalPets = totalDogs + totalCats;
+        // Count total number of documents in each collection
+        const totalDogs = await dogsCollection.countDocuments();
+        const totalCats = await catsCollection.countDocuments();
+        const totalPets = totalDogs + totalCats;
 
-          // Pagination logic across both collections
-          let pets = [];
-          if (skip < totalDogs) {
-              // If skip is less than the number of dogs, fetch dogs first
-              const dogs = await dogsCollection.find().skip(skip).limit(limit).toArray();
-              pets = [...dogs];
-              // console.log(dogs.length);
-              // If more pets are needed to fill the limit, fetch cats
-              if (dogs.length < limit) {
-                  const remainingLimit = limit - dogs.length;
-                  const cats = await catsCollection.find().limit(remainingLimit).toArray();
-                  pets = [...pets, ...cats];
-              }
-          } else {
-              // If skip is greater than or equal to the number of dogs, skip cats
-              const catsSkip = skip - totalDogs;
-              const cats = await catsCollection.find().skip(catsSkip).limit(limit).toArray();
-              pets = [...cats];
+        // Pagination logic across both collections
+        let pets = [];
+        if (skip < totalDogs) {
+          // If skip is less than the number of dogs, fetch dogs first
+          const dogs = await dogsCollection.find().skip(skip).limit(limit).toArray();
+          pets = [...dogs];
+          // console.log(dogs.length);
+          // If more pets are needed to fill the limit, fetch cats
+          if (dogs.length < limit) {
+            const remainingLimit = limit - dogs.length;
+            const cats = await catsCollection.find().limit(remainingLimit).toArray();
+            pets = [...pets, ...cats];
           }
-  
-          res.json({
-              pets,
-              totalPets,
-              totalPages: Math.ceil(totalPets / limit),
-              currentPage: page,
-          });
-      } catch (error) {
-          res.status(500).json({ message: error.message });
-      }
-  });
-  
-  
+        } else {
+          // If skip is greater than or equal to the number of dogs, skip cats
+          const catsSkip = skip - totalDogs;
+          const cats = await catsCollection.find().skip(catsSkip).limit(limit).toArray();
+          pets = [...cats];
+        }
 
+        res.json({
+          pets,
+          totalPets,
+          totalPages: Math.ceil(totalPets / limit),
+          currentPage: page,
+        });
+      } catch (error) {
+        res.status(500).json({ message: error.message });
+      }
+    });
+
+    // add a blog
+    app.post("/addblog", async (req, res) => {
+      const blog = req.body;
+      const result = await blogCollection.insertOne(blog);
+      res.send(result);
+    })
+    app.get("/blogs", async (req, res) => {
+      const result = await blogCollection.find().toArray()
+      res.send(result)
+    })
+    app.get("/blog", async (req, res) => {
+      const id = req.query.id
+      const query={_id: new ObjectId(id)}
+      const result =await blogCollection.findOne(query)
+      res.send(result)
+    })
+
+    // post a comments
+    app.post("/postcomment",async (req,res)=>{
+      const comment = req.body
+      const id= req.query.id
+      const query= {_id: new ObjectId(id)}
+      const result = await blogCollection.updateOne(query,{$push:{ comments: comment }})
+      res.send(result)
+    })
 
 
     await client.db("admin").command({ ping: 1 });
