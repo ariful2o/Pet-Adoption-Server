@@ -23,10 +23,15 @@ app.use(cors({
 }));
 
 // cookies options
+// const cookieOptions = {
+//   httpOnly: true,
+//   secure: process.env.NODE_ENV === "production",
+//   sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+// };
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+  secure:false,
+  sameSite:  "none",
 };
 
 // Connection to MongoDB
