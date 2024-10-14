@@ -29,7 +29,7 @@ app.use(cors({
 //   sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
 // };
 const cookieOptions = {
-  httpOnly: true,
+  httpOnly: false,
   secure:false,
   sameSite:  "none",
 };
