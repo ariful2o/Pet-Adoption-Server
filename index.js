@@ -19,6 +19,13 @@ app.use(cors({
   credentials: true,
 }));
 
+// cookies options
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+};
+
 // Connection to MongoDB
 const uri = `mongodb+srv://${process.env.DB_UserName}:${process.env.DB_Password}@cluster0.0zrlznh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -31,7 +38,6 @@ const client = new MongoClient(uri, {
 });
 
 //  require('crypto').randomBytes(64).toString('hex')
-
 
 async function run() {
   try {
@@ -78,13 +84,6 @@ async function run() {
       }
     };
 
-    // cookies options
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-    };
-
     // Creating Token
     app.post("/jwt", async (req, res) => {
       const user = req.body.email;
@@ -98,6 +97,7 @@ async function run() {
     });
 
     // Users related API
+    // get all user by admin
     app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       const users = await userCollection.find().toArray();
       res.send(users);
@@ -178,7 +178,7 @@ async function run() {
     });
 
     // add a new pet
-    app.post("/addpet", async (req, res) => {
+    app.post("/addpet", verifyToken, async (req, res) => {
       const pet = req.body;
 
       if (pet.petCategory.value === "dog") {
@@ -191,7 +191,7 @@ async function run() {
     })
 
     //request for adoptions
-    app.post("/pets/adoption", async (req, res) => {
+    app.post("/pets/adoption", verifyToken, async (req, res) => {
       const data = req.body;
       // const pet= data.petId
       const result = await adoptRequestCillection.insertOne(data)
@@ -199,7 +199,7 @@ async function run() {
     })
 
     // adoption request
-    app.post("/adoptrequests", async (req, res) => {
+    app.post("/adoptrequests", verifyToken, async (req, res) => {
       const email = req.body.email
       const query = { 'author.email': email }
 
@@ -269,7 +269,7 @@ async function run() {
     })
 
     // update a pet by di
-    app.put("/updatepet/:petCategory/:id", async (req, res) => {
+    app.put("/updatepet/:petCategory/:id", verifyToken, async (req, res) => {
       const update = req.body
       const id = req.params.id
       const pet = req.params.petCategory
@@ -302,7 +302,7 @@ async function run() {
     })
 
     // delete a pet by id
-    app.delete("/:petCategory/:id", async (req, res) => {
+    app.delete("/:petCategory/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       if (!isValidObjectId(id)) {
         return res.status(400).send({ error: "Invalid ID format." });
@@ -319,7 +319,7 @@ async function run() {
     })
 
     // update status of pet
-    app.put("/updateStatus/:petCategory/:petId", async (req, res) => {
+    app.put("/updateStatus/:petCategory/:petId", verifyToken, async (req, res) => {
       const update = req.body
       const id = req.params.petId
       const petCategory = req.params.petCategory
@@ -340,8 +340,8 @@ async function run() {
       }
     })
 
-    // adopt request status
-    app.put('/adoptrequests/:id', async (req, res) => {
+    // adopt request status update
+    app.put('/adoptrequests/:id', verifyToken, async (req, res) => {
       const update = req.body
       const id = req.params.id
       const query = { _id: new ObjectId(id) }
@@ -356,7 +356,7 @@ async function run() {
     })
 
     // get my requests
-    app.post("/myrequest", async (req, res) => {
+    app.post("/myrequest", verifyToken, async (req, res) => {
       const email = req.body.email;
       const query = { email: email }
       const result = await adoptRequestCillection.find(query).toArray()
@@ -364,14 +364,14 @@ async function run() {
     })
 
     // cancel adoptin request
-    app.delete("/cancel/:id", async (req, res) => {
+    app.delete("/cancel/:id", verifyToken, async (req, res) => {
       const id = req.params.id
       const result = await adoptRequestCillection.deleteOne({ _id: new ObjectId(id) })
       res.send(result)
     })
 
-    // campains request
-    app.post("/createcampain", async (req, res) => {
+    // campains create
+    app.post("/createcampain", verifyToken, async (req, res) => {
       const campaign = req.body;
       const result = await campaignCollection.insertOne(campaign);
       res.send(result);
@@ -420,7 +420,7 @@ async function run() {
     });
 
     // get a donation campaign by id
-    app.post(`/donation-campaigns`, async (req, res) => {
+    app.post(`/donation-campaigns`, verifyToken, async (req, res) => {
       const id = req.body.id;
       const result = await campaignCollection.findOne({ _id: new ObjectId(id) })
       res.send(result);
@@ -429,7 +429,7 @@ async function run() {
     // payment methods
 
     // Payment method intent
-    app.post("/create-payment-intent", async (req, res) => {
+    app.post("/create-payment-intent", verifyToken, async (req, res) => {
       const donation = req.body.amount;
       const amount = parseInt(donation * 100);
 
@@ -451,7 +451,7 @@ async function run() {
     });
 
     // Payment add for new donation
-    app.post("/paymentsucess", async (req, res) => {
+    app.post("/paymentsucess", verifyToken, async (req, res) => {
       const { email, campaignId, petPicture, donnerName, petName, currentDonation, maxDonation, isPaused, transactionId, donators, time, status
       } = req.body;
 
@@ -469,21 +469,21 @@ async function run() {
     })
 
     // get my all donations
-    app.get("/myDonations", async (req, res) => {
+    app.get("/myDonations", verifyToken, async (req, res) => {
       const email = req.query.email
       const query = { email: email }
       const result = await donationCollection.find(query).toArray()
       res.send(result)
     })
 
-    // //my campaign donators
+    //campaign donators by admin
     app.get("/alldonations", verifyToken, verifyAdmin, async (req, res) => {
       const result = await campaignCollection.find().toArray()
       res.send(result)
     })
 
     // My campaign donators
-    app.get("/mycampaigns-donators", async (req, res) => {
+    app.get("/mycampaigns-donators", verifyToken, async (req, res) => {
       const id = req.query.id;
       const query = { campaignId: id };
 
@@ -497,7 +497,7 @@ async function run() {
       }
     });
 
-    //  pagenation for all pets
+    //  pagenation for all pets by admin
     app.get("/allpets", verifyToken, verifyAdmin, async (req, res) => {
 
       const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
@@ -543,7 +543,7 @@ async function run() {
     });
 
     // add a blog
-    app.post("/addblog", async (req, res) => {
+    app.post("/addblog", verifyToken, async (req, res) => {
       const blog = req.body;
       const result = await blogCollection.insertOne(blog);
       res.send(result);
@@ -564,7 +564,7 @@ async function run() {
     })
 
     // post a comments
-    app.post("/postcomment", async (req, res) => {
+    app.post("/postcomment", verifyToken, async (req, res) => {
       const comment = req.body
       const id = req.query.id
       const query = { _id: new ObjectId(id) }
@@ -573,7 +573,7 @@ async function run() {
     })
 
     // delete donation from campaign
-    app.delete("/deletedonation/:id", async (req, res) => {
+    app.delete("/deletedonation/:id", verifyToken, async (req, res) => {
       const id = req.params.id
       const query = { _id: new ObjectId(id) }
       const result = await donationCollection.deleteOne(query)
