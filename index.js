@@ -15,6 +15,9 @@ app.use(cookieParser());
 app.use(cors({
   origin: [
     "http://localhost:5173",
+    "https://pet-adoption9.netlify.app",
+    "https://pet-adoption-c569a.web.app",
+    "https://pet-adoption-c569a.firebaseapp.com",
   ],
   credentials: true,
 }));
