@@ -23,15 +23,10 @@ app.use(cors({
 }));
 
 // cookies options
-// const cookieOptions = {
-//   httpOnly: true,
-//   secure: process.env.NODE_ENV === "production",
-//   sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-// };
 const cookieOptions = {
-  httpOnly: false,
-  secure:false,
-  sameSite:  "none",
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
 };
 
 // Connection to MongoDB
@@ -66,7 +61,7 @@ async function run() {
 
     // Custom middleware to verify token
     const verifyToken = (req, res, next) => {
-      const token = req.cookies?.token;
+      const token = req.cookies.token;
       if (!token) {
         return res.status(401).send({ "error": "Unauthorized", "message": "Authentication is required" });
       }
@@ -81,7 +76,6 @@ async function run() {
 
     // Verify admin middleware
     const verifyAdmin = async (req, res, next) => {
-      // console.log(req);
       const email = req.user?.email; // Use req.user from token verification
       const query = { email: email };
       const result = await userCollection.findOne(query)
@@ -106,7 +100,7 @@ async function run() {
 
     // Users related API
     // get all user by admin
-    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
+    app.get("/allusers", verifyToken,verifyAdmin, async (req, res) => {
       const users = await userCollection.find().toArray();
       res.send(users);
     })
